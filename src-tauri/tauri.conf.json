@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Quay",
+  "version": "0.1.0",
+  "identifier": "com.flashsoft.frpcdesktop",
+  "build": {
+    "beforeDevCommand": "./node_modules/.bin/vite --host 0.0.0.0 --port 1420",
+    "beforeBuildCommand": "./node_modules/.bin/tsc && ./node_modules/.bin/vite build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Quay",
+        "width": 920,
+        "height": 760,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "titleBarStyle": "Transparent",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 14,
+          "y": 16
+        },
+        "maximizable": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "app"
+    ],
+    "createUpdaterArtifacts": false,
+    "resources": [
+      "resources/frpc",
+      "resources/frpc.toml"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "12.0"
+    }
+  }
+}

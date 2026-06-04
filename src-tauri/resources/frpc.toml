@@ -1,0 +1,11 @@
+serverAddr = "example.com"
+serverPort = 7000
+auth.method = "token"
+auth.token = "replace-me"
+
+[[proxies]]
+name = "sample-tcp"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8080
+remotePort = 6000
