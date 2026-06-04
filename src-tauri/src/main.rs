@@ -252,7 +252,6 @@ fn show_main_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     };
     window.show().map_err(|err| err.to_string())?;
     window.unminimize().map_err(|err| err.to_string())?;
-    let _ = enable_native_background_drag(&window);
     window
         .set_content_protected(false)
         .map_err(|err| err.to_string())?;
@@ -279,7 +278,6 @@ fn show_settings_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
         window.show().map_err(|err| err.to_string())?;
         window.unminimize().map_err(|err| err.to_string())?;
-        let _ = enable_native_background_drag(&window);
         window
             .set_content_protected(false)
             .map_err(|err| err.to_string())?;
@@ -307,7 +305,6 @@ fn show_settings_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     }));
 
     let window = builder.build().map_err(|err| err.to_string())?;
-    let _ = enable_native_background_drag(&window);
     window
         .set_content_protected(false)
         .map_err(|err| err.to_string())?;
@@ -354,24 +351,6 @@ fn activate_app<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
 
     Ok(())
 }
-
-fn enable_native_background_drag<R: Runtime>(window: &WebviewWindow<R>) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        let ns_window = window.ns_window().map_err(|err| err.to_string())?;
-        if ns_window.is_null() {
-            return Ok(());
-        }
-        unsafe {
-            let ns_window = &*(ns_window.cast::<objc2_app_kit::NSWindow>());
-            ns_window.setMovable(true);
-            ns_window.setMovableByWindowBackground(true);
-        }
-    }
-
-    Ok(())
-}
-
 fn show_app_in_dock<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     app.set_dock_visibility(true)
         .map_err(|err| err.to_string())?;

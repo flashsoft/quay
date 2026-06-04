@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parse } from 'smol-toml';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import {
   FileText,
   Logs,
@@ -151,38 +150,6 @@ function AppSurface({
   );
 }
 
-function startWindowDrag(event: React.MouseEvent<HTMLElement>) {
-  if (!isTauriEnvironment() || event.buttons !== 1 || event.detail !== 1) return;
-
-  const target = event.target instanceof HTMLElement ? event.target : null;
-  if (
-    target?.closest(
-      'a,button,input,label,select,textarea,[contenteditable=true],[role=button],[role=link],[role=menuitem],[role=tab],[role=checkbox],[role=radio],[role=switch],[data-tauri-drag-region="false"],[data-window-drag=false]',
-    )
-  ) {
-    return;
-  }
-
-  void getCurrentWindow().startDragging().catch((error) => {
-    console.error('Failed to start native window drag', error);
-  });
-}
-
-function WindowDragStrip() {
-  return (
-    <div
-      aria-hidden="true"
-      className="fixed inset-x-0 top-0 z-50 h-12 select-none pointer-events-none"
-    >
-      <div
-        data-tauri-drag-region="deep"
-        onMouseDown={startWindowDrag}
-        className="absolute inset-y-0 left-20 right-0 pointer-events-auto"
-      />
-    </div>
-  );
-}
-
 function WindowTitleBar({
   title,
   description,
@@ -196,15 +163,13 @@ function WindowTitleBar({
   return (
     <div
       data-slot="window-titlebar"
-      data-tauri-drag-region="deep"
-      onMouseDown={startWindowDrag}
       className={cn('flex min-h-12 select-none items-center justify-between gap-4 pb-2', className)}
     >
-      <div data-tauri-drag-region="deep" className="grid min-w-0 gap-1">
+      <div className="grid min-w-0 gap-1">
         <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
-      {actions ? <div data-tauri-drag-region="false" className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
@@ -268,7 +233,6 @@ function ThemeToggle({
       variant="outline"
       size="sm"
       value={value}
-      data-tauri-drag-region="false"
       className={cn(iconOnly && 'gap-0')}
       onValueChange={(nextValue) => {
         if (nextValue === 'light' || nextValue === 'dark') onChange(nextValue);
@@ -386,7 +350,6 @@ export default function App() {
 
   return (
     <div className={theme}>
-      <WindowDragStrip />
       {view === 'settings' ? (
         <SettingsWindow />
       ) : view === 'tray' ? (
