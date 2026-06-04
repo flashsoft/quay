@@ -39,7 +39,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build and publish Tauri release
         uses: tauri-apps/tauri-action@v0
