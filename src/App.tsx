@@ -281,11 +281,13 @@ function TomlEditor({
   onChange,
   invalid,
   className,
+  shortcutNonce,
 }: {
   value: string;
   onChange: (next: string) => void;
   invalid?: boolean;
   className?: string;
+  shortcutNonce?: number;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const highlightRef = useRef<HTMLPreElement | null>(null);
@@ -295,6 +297,17 @@ function TomlEditor({
     highlightRef.current.scrollTop = textareaRef.current.scrollTop;
     highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
   }, []);
+
+  const selectAll = useCallback(() => {
+    if (!textareaRef.current) return;
+    textareaRef.current.focus();
+    textareaRef.current.setSelectionRange(0, textareaRef.current.value.length);
+  }, []);
+
+  useEffect(() => {
+    if (!shortcutNonce) return;
+    selectAll();
+  }, [selectAll, shortcutNonce]);
 
   return (
     <div
@@ -318,8 +331,14 @@ function TomlEditor({
         spellCheck={false}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a') {
+            event.preventDefault();
+            selectAll();
+          }
+        }}
         onScroll={syncScroll}
-        className="absolute inset-0 h-full resize-none overflow-auto border-0 bg-transparent px-4 py-2 font-mono text-sm leading-6 text-transparent shadow-none focus-visible:ring-0"
+        className="absolute inset-0 h-full resize-none overflow-auto border-0 bg-transparent px-4 py-2 font-mono text-sm leading-6 text-transparent shadow-none selection:bg-accent/40 focus-visible:ring-0"
         style={{ caretColor: 'hsl(var(--foreground))', WebkitTextFillColor: 'transparent' }}
       />
     </div>
@@ -374,6 +393,7 @@ function MainWindow({
   const [logs, setLogs] = useState<string[]>([]);
   const [busyAction, setBusyAction] = useState<'save' | 'start' | 'stop' | 'restart' | 'reload' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [editorShortcutNonce, setEditorShortcutNonce] = useState(0);
 
   const validation = useMemo(() => validateToml(configDraft), [configDraft]);
   const isDirty = configDraft !== savedConfig;
@@ -421,7 +441,7 @@ function MainWindow({
   useEffect(() => {
     if (!isTauriEnvironment()) return;
 
-    let unlisten: (() => void) | undefined;
+    const unlistenHandles: Array<() => void> = [];
     void listen<ServiceState>('frpc-status', (event) => {
       setAppState((current) =>
         current
@@ -434,11 +454,19 @@ function MainWindow({
       void refreshLogs();
       void refreshState();
     }).then((dispose) => {
-      unlisten = dispose;
+      unlistenHandles.push(dispose);
+    });
+
+    void listen<string>('editor-shortcut', (event) => {
+      if (event.payload === 'select-all') {
+        setEditorShortcutNonce(Date.now());
+      }
+    }).then((dispose) => {
+      unlistenHandles.push(dispose);
     });
 
     return () => {
-      unlisten?.();
+      unlistenHandles.forEach((dispose) => dispose());
     };
   }, [refreshLogs, refreshState]);
 
@@ -578,7 +606,13 @@ function MainWindow({
                     <FieldTitle>frpc.toml 配置内容</FieldTitle>
                     <FieldDescription>修改 frpc.toml 并保存到本地配置文件。</FieldDescription>
                   </FieldContent>
-                  <TomlEditor className="min-h-0 flex-1" value={configDraft} onChange={setConfigDraft} invalid={!validation.ok} />
+                  <TomlEditor
+                    className="min-h-0 flex-1"
+                    value={configDraft}
+                    onChange={setConfigDraft}
+                    invalid={!validation.ok}
+                    shortcutNonce={editorShortcutNonce}
+                  />
                   <FieldError>{validation.ok ? null : `TOML 格式错误：${validation.message}`}</FieldError>
                 </Field>
               </CardContent>

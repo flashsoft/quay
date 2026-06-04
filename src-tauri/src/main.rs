@@ -15,7 +15,7 @@ use std::{
 
 use tauri::{
     image::Image,
-    menu::{Menu, MenuItem, Submenu},
+    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     path::BaseDirectory,
     tray::TrayIconBuilder,
     AppHandle, Emitter, Manager, PhysicalPosition, Runtime, State, WebviewUrl, WebviewWindow,
@@ -136,7 +136,28 @@ fn build_app_menu(app: &mut tauri::App<tauri::Wry>) -> Result<(), Box<dyn std::e
     )?;
     let quit = MenuItem::with_id(&handle, "quit", "退出 Quay", true, Some("CmdOrCtrl+Q"))?;
     let file = Submenu::with_items(&handle, "File", true, &[&close_window, &quit])?;
-    let menu = Menu::with_items(&handle, &[&file])?;
+
+    let undo = PredefinedMenuItem::undo(&handle, None)?;
+    let redo = PredefinedMenuItem::redo(&handle, None)?;
+    let separator_1 = PredefinedMenuItem::separator(&handle)?;
+    let cut = PredefinedMenuItem::cut(&handle, None)?;
+    let copy = PredefinedMenuItem::copy(&handle, None)?;
+    let paste = PredefinedMenuItem::paste(&handle, None)?;
+    let select_all = MenuItem::with_id(
+        &handle,
+        "editor_select_all",
+        "Select All",
+        true,
+        Some("CmdOrCtrl+A"),
+    )?;
+    let edit = Submenu::with_items(
+        &handle,
+        "Edit",
+        true,
+        &[&undo, &redo, &separator_1, &cut, &copy, &paste, &select_all],
+    )?;
+
+    let menu = Menu::with_items(&handle, &[&file, &edit])?;
     app.set_menu(menu)?;
 
     Ok(())
@@ -161,6 +182,11 @@ fn attach_menu_event_handlers(app: &mut tauri::App<tauri::Wry>) {
                 FrpcStatus::Stopped => start_frpc_internal(app, &state),
                 FrpcStatus::Error => restart_frpc_internal(app, &state),
             };
+        }
+        "editor_select_all" => {
+            if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+                let _ = window.emit("editor-shortcut", "select-all");
+            }
         }
         "quit" => {
             let state = app.state::<RuntimeState>();
